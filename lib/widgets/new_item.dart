@@ -1,10 +1,13 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
+
 import 'package:shopping_list_app_8_forms/data/categories.dart';
 import 'package:shopping_list_app_8_forms/models/category.dart';
 import 'package:shopping_list_app_8_forms/models/grocery_item.dart';
 
 class NewItem extends StatefulWidget {
-  const NewItem({super.key});
+  const NewItem({super.key, this.existingItem});
+  final GroceryItem? existingItem;
 
   @override
   State<NewItem> createState() {
@@ -14,16 +17,30 @@ class NewItem extends StatefulWidget {
 
 class _NewItemState extends State<NewItem> {
   final _formKey = GlobalKey<FormState>();
-  var _enteredName = '';
-  var _enteredQuantity = 1;
-  Category? _selectedCategory = categories[3];
+  late String _enteredName;
+  late int _enteredQuantity;
+  late Category? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingItem != null) {
+      _enteredName = widget.existingItem!.name;
+      _enteredQuantity = widget.existingItem!.quantity;
+      _selectedCategory = widget.existingItem!.category;
+    } else {
+      _enteredName = '';
+      _enteredQuantity = 1;
+      _selectedCategory = categories.values.first;
+    }
+  }
 
   void _saveItem() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
       final newItem = GroceryItem(
-          id: DateTime.now().toString(),
+          id: widget.existingItem?.id ?? DateTime.now().toString(),
           name: _enteredName,
           quantity: _enteredQuantity,
           category: _selectedCategory!);
@@ -35,9 +52,9 @@ class _NewItemState extends State<NewItem> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Add a new item',
-        ),
+        title: widget.existingItem != null
+            ? const Text('Edit item')
+            : const Text('Add new product'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(12),
@@ -47,6 +64,7 @@ class _NewItemState extends State<NewItem> {
             children: [
               TextFormField(
                 maxLength: 50,
+                initialValue: _enteredName,
                 decoration: const InputDecoration(
                   label: Text('Name'),
                 ),
@@ -128,7 +146,9 @@ class _NewItemState extends State<NewItem> {
                   ),
                   ElevatedButton(
                     onPressed: _saveItem,
-                    child: const Text('Add Item'),
+                    child: widget.existingItem != null
+                        ? const Text('Edit item')
+                        : const Text('Add'),
                   )
                 ],
               )

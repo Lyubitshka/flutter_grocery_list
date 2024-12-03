@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_list_app_8_forms/data/categories.dart';
 
 enum Categories {
   vegetables,
@@ -34,5 +35,19 @@ class Category {
       map['title'],
       Color(map['categoryColor']),
     );
+  }
+  factory Category.fromJson(String catKey) {
+    final category = Categories.values.firstWhere(
+      (e) => e.name == catKey,
+      orElse: () => Categories.other,
+    );
+    return categories[category]!;
+  }
+
+  String toJson() {
+    return categories.entries
+        .firstWhere((entry) => entry.value.title == title)
+        .key
+        .name;
   }
 }

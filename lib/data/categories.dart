@@ -25,7 +25,7 @@ final categories = {
   ),
   Categories.sweets: Category(
     'Sweets',
-    const Color.fromARGB(255, 255, 149, 0),
+    const Color.fromARGB(255, 255, 251, 0),
   ),
   Categories.spices: Category(
     'Spices',
@@ -41,6 +41,6 @@ final categories = {
   ),
   Categories.other: Category(
     'Other',
-    const Color.fromARGB(255, 0, 225, 255),
+    const Color.fromARGB(255, 103, 122, 124),
   ),
 };

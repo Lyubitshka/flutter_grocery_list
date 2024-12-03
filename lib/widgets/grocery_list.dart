@@ -20,6 +20,7 @@ class _GroceryListState extends State<GroceryList> {
   List<GroceryItem> _items = [];
   String _searchQuery = '';
   Category? _selectedFilterCategory;
+  bool _isAscending = true;
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _GroceryListState extends State<GroceryList> {
     setState(() {
       _loadedItems = _menager.getItems().then((items) {
         _items = items;
-        _filteredItems = List.from(_items);
+        _applyFilters();
         return items;
       });
     });
@@ -82,14 +83,44 @@ class _GroceryListState extends State<GroceryList> {
     });
   }
 
+  void _applyFilters() {
+    setState(() {
+      _filteredItems = _items.where((item) {
+        final matchesQuery = _searchQuery.isEmpty ||
+            item.name.toLowerCase().contains(_searchQuery) ||
+            item.category.title.toLowerCase().contains(_searchQuery);
+        final matchesCategory = _selectedFilterCategory == null ||
+            item.category == _selectedFilterCategory;
+        return matchesQuery && matchesCategory;
+      }).toList();
+    });
+  }
+
+  void _sortByCategory() {
+    setState(() {
+      _filteredItems.sort((a, b) {
+        return _isAscending
+            ? a.category.title.compareTo(b.category.title)
+            : b.category.title.compareTo(a.category.title);
+      });
+      _isAscending = !_isAscending;
+    });
+  }
+
   Future<void> _addItem(GroceryItem item) async {
     await _menager.addItem(item);
+    _loadItems();
+  }
+
+  Future<void> _updateItem(String id, GroceryItem updatedItem) async {
+    await _menager.updateItem(id, updatedItem);
     _loadItems();
   }
 
   Future<void> _removeItem(GroceryItem item) async {
     await _menager.removeItem(item.id);
     _loadItems();
+    _applyFilters();
   }
 
   Future<void> _clearList() async {
@@ -122,6 +153,11 @@ class _GroceryListState extends State<GroceryList> {
           'Your Groceries',
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sort),
+            onPressed: _sortByCategory,
+            tooltip: 'Sort by category',
+          ),
           TextButton.icon(
             onPressed: () {
               _clearList();
@@ -133,6 +169,7 @@ class _GroceryListState extends State<GroceryList> {
             icon: const Icon(
               Icons.remove_circle_outline,
             ),
+            iconAlignment: IconAlignment.end,
           ),
         ],
         bottom: PreferredSize(
@@ -215,21 +252,48 @@ class _GroceryListState extends State<GroceryList> {
           return ListView.builder(
             itemCount: items.length,
             itemBuilder: (ctx, idx) => Dismissible(
+              background: Container(
+                color: Colors.red,
+                child: const Icon(Icons.cancel),
+              ),
+              // secondaryBackground: Container(
+              //   color: Colors.lightBlueAccent,
+              //   child: const Icon(Icons.edit),
+              // ),
               onDismissed: (direction) {
                 _removeItem(items[idx]);
               },
               key: ValueKey(items[idx].id),
               child: ListTile(
-                title: Text(items[idx].name),
+                title: Text(
+                  items[idx].name,
+                  style: const TextStyle(fontSize: 18),
+                ),
                 leading: Container(
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: items[idx].category.categoryColor),
                   width: 24,
                   height: 24,
-                  color: items[idx].category.categoryColor,
+                  // color: items[idx].category.categoryColor,
                 ),
                 trailing: Text(
                   items[idx].quantity.toString(),
-                  style: const TextStyle(fontSize: 18),
+                  style: const TextStyle(fontSize: 22),
                 ),
+                mouseCursor: MouseCursor.defer,
+                onTap: () async {
+                  final updatedItem =
+                      await Navigator.of(context).push<GroceryItem>(
+                    MaterialPageRoute(
+                      builder: (ctx) => NewItem(existingItem: items[idx]),
+                    ),
+                  );
+                  if (updatedItem != null) {
+                    await _updateItem(items[idx].id, updatedItem);
+                    _loadItems();
+                  }
+                },
               ),
             ),
           );

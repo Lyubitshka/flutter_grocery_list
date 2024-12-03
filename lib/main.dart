@@ -27,7 +27,7 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.dark,
           surface: const Color.fromARGB(255, 63, 38, 109),
         ),
-        scaffoldBackgroundColor: const Color.fromARGB(255, 111, 99, 129),
+        scaffoldBackgroundColor: const Color.fromARGB(255, 27, 15, 48),
       ),
       home: const GroceryList(),
       debugShowCheckedModeBanner: false,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:shopping_list_app_8_forms/data/categories.dart';
 import 'package:shopping_list_app_8_forms/models/category.dart';
 
@@ -13,26 +14,6 @@ class GroceryItem {
   final String name;
   final int quantity;
   final Category category;
-
-  // // Convert to Map for JSON serialization
-  // Map<String, dynamic> toMap() {
-  //   return {
-  //     'id': id,
-  //     'name': name,
-  //     'quantity': quantity,
-  //     'category': category.toMap(),
-  //   };
-  // }
-
-  // // Convert from Map (JSON deserialization)
-  // factory GroceryItem.fromMap(Map<String, dynamic> map) {
-  //   return GroceryItem(
-  //     id: map['id'],
-  //     name: map['name'],
-  //     quantity: map['quantity'],
-  //     category: Category.fromMap(map['category']),
-  //   );
-  // }
 
   Map<String, dynamic> toMap() {
     return {
@@ -55,10 +36,27 @@ class GroceryItem {
       category: category,
     );
   }
-  // // Convert to JSON
-  // String toJson() => json.encode(toMap());
 
-  // // Convert from JSON
+  // Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      "name": name,
+      'quantity': quantity,
+      'category': category.toJson()
+    };
+  }
+
+  factory GroceryItem.fromJson(Map<String, dynamic> json) {
+    return GroceryItem(
+      id: json['id'],
+      name: json['name'],
+      quantity: json['quantity'],
+      category: Category.fromJson(json['category']),
+    );
+  }
+
+  // Convert from JSON
   // factory GroceryItem.fromJson(String source) =>
   //     GroceryItem.fromMap(json.decode(source));
 }
