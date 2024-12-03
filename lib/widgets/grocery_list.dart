@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shopping_list_app_8_forms/data/categories.dart';
+import 'package:shopping_list_app_8_forms/models/category.dart';
 import 'package:shopping_list_app_8_forms/models/grocery_item.dart';
 import 'package:shopping_list_app_8_forms/widgets/list_menager.dart';
 import 'package:shopping_list_app_8_forms/widgets/new_item.dart';
@@ -15,7 +17,9 @@ class _GroceryListState extends State<GroceryList> {
   final GroceryListManager _menager = GroceryListManager();
   final TextEditingController _searchController = TextEditingController();
   List<GroceryItem> _filteredItems = [];
+  List<GroceryItem> _items = [];
   String _searchQuery = '';
+  Category? _selectedFilterCategory;
 
   @override
   void initState() {
@@ -27,7 +31,8 @@ class _GroceryListState extends State<GroceryList> {
   void _loadItems() {
     setState(() {
       _loadedItems = _menager.getItems().then((items) {
-        _filteredItems = items;
+        _items = items;
+        _filteredItems = List.from(_items);
         return items;
       });
     });
@@ -41,9 +46,37 @@ class _GroceryListState extends State<GroceryList> {
           _filteredItems = items;
         });
       } else {
-        _filteredItems = _filteredItems.where((item) {
-          return item.name.toLowerCase().contains(_searchQuery) ||
+        _filteredItems = _items.where((item) {
+          final matchesQuery = item.name.toLowerCase().contains(_searchQuery) ||
               item.category.title.toLowerCase().contains(_searchQuery);
+          final matchesCategory = _selectedFilterCategory == null ||
+              item.category == _selectedFilterCategory;
+          return matchesQuery && matchesCategory;
+        }).toList();
+      }
+    });
+  }
+
+  void _filterByCategory(Category? category) {
+    setState(() {
+      _selectedFilterCategory = category;
+
+      if (_selectedFilterCategory == null) {
+        // Jeśli wybrano "All Categories", zresetuj filtr
+        _filteredItems = _items.where((item) {
+          final matchesQuery = _searchQuery.isEmpty ||
+              item.name.toLowerCase().contains(_searchQuery) ||
+              item.category.title.toLowerCase().contains(_searchQuery);
+          return matchesQuery;
+        }).toList();
+      } else {
+        // Filtruj według wybranej kategorii
+        _filteredItems = _items.where((item) {
+          final matchesCategory = item.category == _selectedFilterCategory;
+          final matchesQuery = _searchQuery.isEmpty ||
+              item.name.toLowerCase().contains(_searchQuery) ||
+              item.category.title.toLowerCase().contains(_searchQuery);
+          return matchesCategory && matchesQuery;
         }).toList();
       }
     });
@@ -103,25 +136,66 @@ class _GroceryListState extends State<GroceryList> {
           ),
         ],
         bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(50),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search items...',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    onPressed: () {
-                      _searchController.clear();
-                      _filterItems('');
-                    },
-                    icon: const Icon(Icons.clear),
+          preferredSize: const Size.fromHeight(50),
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search items...',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterItems('');
+                          _filterByCategory(null); // Resetuj filtr
+                        },
+                      ),
+                    ),
+                    onChanged: _filterItems,
                   ),
                 ),
-                onChanged: _filterItems,
               ),
-            )),
+              // const SizedBox(width: 8),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12),
+                child: DropdownButton<Category?>(
+                  value: _selectedFilterCategory,
+                  hint: const Text('Category'),
+                  items: [
+                    const DropdownMenuItem<Category?>(
+                      value: null,
+                      child: Text('All Categories'),
+                    ),
+                    ...categories.values.map((category) {
+                      return DropdownMenuItem<Category>(
+                        value: category,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 16,
+                              height: 16,
+                              color: category.categoryColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(category.title),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                  onChanged: _filterByCategory,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: FutureBuilder(
         future: _loadedItems,
@@ -132,28 +206,28 @@ class _GroceryListState extends State<GroceryList> {
           if (snapshot.hasError) {
             return Center(child: Text(snapshot.error.toString()));
           }
-
-          if (_filteredItems.isEmpty) {
+          final items = _filteredItems;
+          if (items.isEmpty) {
             return const Center(
               child: Text('No items added to your grocery list.'),
             );
           }
           return ListView.builder(
-            itemCount: _filteredItems.length,
+            itemCount: items.length,
             itemBuilder: (ctx, idx) => Dismissible(
               onDismissed: (direction) {
-                _removeItem(_filteredItems[idx]);
+                _removeItem(items[idx]);
               },
-              key: ValueKey(_filteredItems[idx].id),
+              key: ValueKey(items[idx].id),
               child: ListTile(
-                title: Text(_filteredItems[idx].name),
+                title: Text(items[idx].name),
                 leading: Container(
                   width: 24,
                   height: 24,
-                  color: _filteredItems[idx].category.categoryColor,
+                  color: items[idx].category.categoryColor,
                 ),
                 trailing: Text(
-                  _filteredItems[idx].quantity.toString(),
+                  items[idx].quantity.toString(),
                   style: const TextStyle(fontSize: 18),
                 ),
               ),
