@@ -150,7 +150,7 @@ class _GroceryListState extends State<GroceryList> {
       ),
       appBar: AppBar(
         title: const Text(
-          'Your Groceries',
+          'Your last grocery list',
         ),
         actions: [
           IconButton(
@@ -267,15 +267,32 @@ class _GroceryListState extends State<GroceryList> {
               child: ListTile(
                 title: Text(
                   items[idx].name,
-                  style: const TextStyle(fontSize: 18),
+                  style: const TextStyle(
+                      fontSize: 22, fontWeight: FontWeight.w300),
                 ),
-                leading: Container(
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: items[idx].category.categoryColor),
-                  width: 24,
-                  height: 24,
-                  // color: items[idx].category.categoryColor,
+                leading: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Checkbox(
+                      value: items[idx].isChecked, // Ustawiamy stan checkboxa
+                      onChanged: (bool? newValue) {
+                        setState(() {
+                          items[idx].isChecked =
+                              newValue ?? false; // Aktualizujemy stan
+                          _updateItem(
+                              items[idx].id, items[idx]); // Zapisz zmiany
+                        });
+                      },
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: items[idx].category.categoryColor),
+                      width: 24,
+                      height: 24,
+                      // color: items[idx].category.categoryColor,
+                    ),
+                  ],
                 ),
                 trailing: Text(
                   items[idx].quantity.toString(),

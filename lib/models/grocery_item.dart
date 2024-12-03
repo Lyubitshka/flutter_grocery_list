@@ -4,23 +4,25 @@ import 'package:shopping_list_app_8_forms/data/categories.dart';
 import 'package:shopping_list_app_8_forms/models/category.dart';
 
 class GroceryItem {
-  GroceryItem({
-    required this.id,
-    required this.name,
-    required this.quantity,
-    required this.category,
-  });
+  GroceryItem(
+      {required this.id,
+      required this.name,
+      required this.quantity,
+      required this.category,
+      this.isChecked = false});
   final String id;
   final String name;
   final int quantity;
   final Category category;
+  bool isChecked;
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
       'quantity': quantity,
-      'category': category.title, // Zapisujemy tylko tytuł kategorii
+      'category': category.title,
+      'isChexked': isChecked // Zapisujemy tylko tytuł kategorii
     };
   }
 
@@ -34,6 +36,7 @@ class GroceryItem {
       name: map['name'],
       quantity: map['quantity'],
       category: category,
+      isChecked: map['isChecked'] ?? false,
     );
   }
 
@@ -43,7 +46,8 @@ class GroceryItem {
       'id': id,
       "name": name,
       'quantity': quantity,
-      'category': category.toJson()
+      'category': category.toJson(),
+      'isChecked': isChecked,
     };
   }
 
@@ -53,6 +57,7 @@ class GroceryItem {
       name: json['name'],
       quantity: json['quantity'],
       category: Category.fromJson(json['category']),
+      isChecked: json['isChecked'] ?? false,
     );
   }
 

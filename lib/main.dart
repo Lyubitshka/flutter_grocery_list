@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
             size: 28,
           ),
           titleTextStyle: TextStyle(
-            fontSize: 28,
+            fontSize: 20,
           ),
         ),
         colorScheme: ColorScheme.fromSeed(

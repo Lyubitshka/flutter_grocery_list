@@ -53,7 +53,9 @@ class _NewItemState extends State<NewItem> {
     return Scaffold(
       appBar: AppBar(
         title: widget.existingItem != null
-            ? const Text('Edit item')
+            ? const Text(
+                'Edit item',
+              )
             : const Text('Add new product'),
       ),
       body: Padding(
