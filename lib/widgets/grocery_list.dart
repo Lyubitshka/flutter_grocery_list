@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:shopping_list_app_8_forms/data/categories.dart';
 import 'package:shopping_list_app_8_forms/models/grocery_item.dart';
+import 'package:shopping_list_app_8_forms/widgets/list_menager.dart';
 import 'package:shopping_list_app_8_forms/widgets/new_item.dart';
 
 class GroceryList extends StatefulWidget {
@@ -14,97 +16,63 @@ class GroceryList extends StatefulWidget {
 }
 
 class _GroceryListState extends State<GroceryList> {
-  List<GroceryItem> _groceryItems = [];
-  // var _isLoading = true;
   late Future<List<GroceryItem>> _loadedItems;
-  String? _error;
+  final GroceryListManager _menager = GroceryListManager();
 
   @override
   void initState() {
     super.initState();
-    _loadedItems = _loadItems();
+    _loadItems();
   }
 
-  Future<List<GroceryItem>> _loadItems() async {
-    final url = Uri.https(
-      'flutter-shopping-list-804a4-default-rtdb.europe-west1.firebasedatabase.app',
-      'shopping-list.json',
-    );
-
-    final response = await http.get(url);
-
-    if (response.statusCode >= 400) {
-      throw Exception('Failed to fetch grocery items. Please try again later.');
-    }
-    if (response.body == 'null') {
-      return [];
-    }
-
-    final Map<String, dynamic> listData = json.decode(response.body);
-    final List<GroceryItem> loadedItems = [];
-    for (final item in listData.entries) {
-      final category = categories.entries
-          .firstWhere(
-              (catItem) => catItem.value.title == item.value['category'])
-          .value;
-      loadedItems.add(
-        GroceryItem(
-          id: item.key,
-          name: item.value['name'],
-          quantity: item.value['quantity'],
-          category: category,
-        ),
-      );
-    }
-    return loadedItems;
-  }
-
-  void _addItem() async {
-    final newItem = await Navigator.of(context).push<GroceryItem>(
-      MaterialPageRoute(
-        builder: (ctx) => const NewItem(),
-      ),
-    );
-    if (newItem == null) {
-      return;
-    }
+  // Funkcja do załadowania elementów
+  void _loadItems() {
     setState(() {
-      _groceryItems.add(newItem);
+      _loadedItems = _menager.getItems();
     });
   }
 
-  void _removeItem(GroceryItem item) async {
-    final index = _groceryItems.indexOf(item);
+  Future<void> _addItem(GroceryItem item) async {
+    await _menager.addItem(item);
+    _loadItems();
+  }
 
-    setState(() {
-      _groceryItems.remove(item);
-    });
+  Future<void> _removeItem(GroceryItem item) async {
+    await _menager.removeItem(item.id);
+    _loadItems();
+  }
 
-    final url = Uri.https(
-        'flutter-shopping-list-804a4-default-rtdb.europe-west1.firebasedatabase.app',
-        'shopping-list/${item.id}.json');
-
-    final response = await http.delete(url);
-
-    if (response.statusCode >= 400) {
-      setState(() {
-        _groceryItems.insert(index, item);
-      });
-    }
+  Future<void> _clearList() async {
+    await _menager.clearList();
+    _loadItems();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+          onPressed: () async {
+            final newItem = await Navigator.of(context).push<GroceryItem>(
+              MaterialPageRoute(
+                builder: (ctx) => const NewItem(),
+              ),
+            );
+            if (newItem != null) {
+              _addItem(newItem);
+            }
+          },
+          label: const Text('Add Item')),
       appBar: AppBar(
           title: const Text(
             'Your Groceries',
           ),
           actions: [
             IconButton(
-              onPressed: _addItem,
-              icon: const Icon(Icons.add),
-            )
+              onPressed: () {
+                _clearList();
+              },
+              icon: const Icon(Icons.remove),
+            ),
           ]),
       body: FutureBuilder(
         future: _loadedItems,
@@ -113,33 +81,30 @@ class _GroceryListState extends State<GroceryList> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                snapshot.error.toString(),
-              ),
-            );
+            return Center(child: Text(snapshot.error.toString()));
           }
-          if (snapshot.data!.isEmpty) {
+          final items = snapshot.data ?? [];
+          if (items.isEmpty) {
             return const Center(
               child: Text('No items added to your grocery list.'),
             );
           }
           return ListView.builder(
-            itemCount: snapshot.data!.length,
+            itemCount: items.length,
             itemBuilder: (ctx, idx) => Dismissible(
               onDismissed: (direction) {
-                _removeItem(snapshot.data![idx]);
+                _removeItem(items[idx]);
               },
-              key: ValueKey(snapshot.data![idx].id),
+              key: ValueKey(items[idx].id),
               child: ListTile(
-                title: Text(snapshot.data![idx].name),
+                title: Text(items[idx].name),
                 leading: Container(
                   width: 24,
                   height: 24,
-                  color: snapshot.data![idx].category.categoryColor,
+                  color: items[idx].category.categoryColor,
                 ),
                 trailing: Text(
-                  snapshot.data![idx].quantity.toString(),
+                  items[idx].quantity.toString(),
                 ),
               ),
             ),
